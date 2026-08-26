@@ -29,6 +29,58 @@ Optional overrides:
 - `SPECCY_MCP_API_BASE` (default `https://api.speccy.cloud`) — Polymarket endpoint
 - `SPECCY_MCP_EXEC_BASE` (default `https://exec.speccy.cloud`) — sandbox exec endpoint
 
+## MCP Configuration
+
+Add to your client's MCP config (Claude Desktop, Cursor, Continue, Cline, etc.):
+
+### claude_desktop_config.json
+
+```json
+{
+  "mcpServers": {
+    "speccy-x402": {
+      "command": "speccy-x402-mcp",
+      "env": {
+        "SPECCY_MCP_WALLET_KEY": "0x_your_operator_wallet_private_key_here"
+      }
+    }
+  }
+}
+```
+
+### Cursor (~/.cursor/mcp.json)
+
+```json
+{
+  "mcpServers": {
+    "speccy-x402": {
+      "command": "speccy-x402-mcp",
+      "env": {
+        "SPECCY_MCP_WALLET_KEY": "0x_your_operator_wallet_private_key_here"
+      }
+    }
+  }
+}
+```
+
+### Continue (.continue/config.json)
+
+```json
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "name": "speccy-x402",
+        "command": "speccy-x402-mcp",
+        "env": {
+          "SPECCY_MCP_WALLET_KEY": "0x_your_operator_wallet_private_key_here"
+        }
+      }
+    ]
+  }
+}
+```
+
 ## Wire into an MCP-compatible agent
 
 ### Claude Desktop (`claude_desktop_config.json`):
