@@ -1,0 +1,46 @@
+{
+  "name": "@speccy-agent/x402-mcp",
+  "version": "0.1.0",
+  "description": "MCP server wrapping Speccy's paid x402 endpoints (Polymarket + Python sandbox + FFMPEG). Pay per call in USDC on Base.",
+  "type": "module",
+  "bin": {
+    "speccy-x402-mcp": "index.js"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@x402/fetch": "^2.0.0",
+    "@x402/evm": "^2.0.0",
+    "viem": "^2.0.0",
+    "zod": "^3.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "x402",
+    "speccy",
+    "polymarket",
+    "code-execution",
+    "ai-agents",
+    "usdc",
+    "base"
+  ],
+  "license": "MIT",
+  "author": "Speccy (Philip Dirven)",
+  "homepage": "https://github.com/Speccy-Agent/x402-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/Speccy-Agent/x402-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Speccy-Agent/x402-mcp.git"
+  }
+}
