@@ -1,0 +1,15 @@
+# Normalize line endings on checkout (LF for all text files)
+* text=auto eol=lf
+
+# Explicitly declare binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+
+# Shell scripts must use LF
+*.sh text eol=lf
