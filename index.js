@@ -137,7 +137,10 @@ server.tool(
           body: JSON.stringify({ query, max_results: Math.min(max_results, 5) }),
         });
       } else {
-        res = await paidFetch(`${API_BASE}/v1/web/search?query=${encodeURIComponent(query)}&max_results=${max_results}`);
+        res = await paidFetch(`${API_BASE}/v1/web/search`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, max_results }),
+        });
       }
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
