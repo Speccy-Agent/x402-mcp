@@ -27,7 +27,7 @@ const paidFetch = wrapFetchWithPayment(fetch, client);
 
 const server = new McpServer({
   name: "speccy-x402",
-  version: "0.1.0",
+  version: "0.2.0",
 });
 
 server.tool(
@@ -62,6 +62,83 @@ server.tool(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ language: "python", code }),
       });
+      if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
+      const data = await res.json();
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
+    }
+  }
+);
+
+server.tool(
+  "transform_media",
+  "Run FFmpeg on a video or audio file. Three tiers — copy ($0.005), transform ($0.05), heavy ($0.20). Returns the transformed file as base64.",
+  {
+    input: z.object({
+      url: z.string().url().optional().describe("URL to fetch the input from"),
+      base64: z.string().optional().describe("Base64-encoded input bytes (alternative to url)"),
+    }).refine(d => d.url || d.base64, { message: "Provide either input.url or input.base64" }).describe("Where to fetch the input"),
+    args: z.array(z.string()).describe("FFmpeg arguments (e.g. ['-vf', 'scale=720:-2', '-c:v', 'libx264'])"),
+    outputFormat: z.string().describe("Output container/format extension (e.g. 'mp4', 'mp3', 'webm')"),
+    tier: z.enum(["copy", "transform", "heavy"]).default("transform").describe("Pricing tier"),
+  },
+  async ({ input, args, outputFormat, tier }) => {
+    const TOOLS_BASE = process.env.SPECCY_MCP_TOOLS_BASE || "https://tools.speccy.cloud";
+    try {
+      const res = await paidFetch(`${TOOLS_BASE}/v1/ffmpeg/${tier}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, args, outputFormat }),
+      });
+      if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
+      const data = await res.json();
+      // Don't echo back huge base64 — return metadata + a preview
+      const summary = {
+        success: data.success,
+        tier,
+        mimeType: data.result?.mimeType,
+        size: data.result?.size,
+        durationMs: data.result?.durationMs,
+        queueWaitMs: data.result?.queueWaitMs,
+        outputBase64Length: data.result?.outputBase64?.length || 0,
+        note: "outputBase64 omitted from MCP response to keep messages small. Use direct HTTPS call to fetch the full file.",
+      };
+      return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
+    }
+  }
+);
+
+server.tool(
+  "web_search",
+  "Real-time web search backed by Tavily. Three tiers — search ($0.005), extract ($0.02), smart ($0.05). Smart = search + extract top N in one call.",
+  {
+    query: z.string().min(1).max(500).describe("Search query"),
+    mode: z.enum(["search", "extract", "smart"]).default("search").describe("Which tier to use"),
+    urls: z.array(z.string().url()).max(5).optional().describe("URLs to extract (only for mode='extract'). 1-5 URLs."),
+    max_results: z.number().int().min(1).max(20).default(5).describe("Number of results to return"),
+  },
+  async ({ query, mode, urls, max_results }) => {
+    try {
+      let res;
+      if (mode === "extract") {
+        if (!urls || urls.length === 0) {
+          return { content: [{ type: "text", text: "mode='extract' requires non-empty urls array" }], isError: true };
+        }
+        res = await paidFetch(`${API_BASE}/v1/web/extract`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls }),
+        });
+      } else if (mode === "smart") {
+        res = await paidFetch(`${API_BASE}/v1/web/smart`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, max_results: Math.min(max_results, 5) }),
+        });
+      } else {
+        res = await paidFetch(`${API_BASE}/v1/web/search?query=${encodeURIComponent(query)}&max_results=${max_results}`);
+      }
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };

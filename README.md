@@ -10,6 +10,8 @@ No x402 knowledge required by the agent. No wallet setup on the agent side. Just
 |---|---|---|
 | `get_prediction_markets` | Top Polymarket prediction markets (volume, liquidity, or startDate sort) | $0.01 USDC |
 | `exec_python` | Run Python 3.12 code in an isolated Docker sandbox (no network, read-only FS, 30s timeout, 64KB output) | $0.02 USDC |
+| `transform_media` | Run FFmpeg on a video/audio file (3 tiers: copy $0.005, transform $0.05, heavy $0.20) | $0.005–$0.20 USDC |
+| `web_search` | Real-time web search + extract via Tavily (3 modes: search $0.005, extract $0.02, smart search+extract $0.05) | $0.005–$0.05 USDC |
 
 ## Install
 
@@ -28,58 +30,6 @@ export SPECCY_MCP_WALLET_KEY="0x..."   # operator wallet private key
 Optional overrides:
 - `SPECCY_MCP_API_BASE` (default `https://api.speccy.cloud`) — Polymarket endpoint
 - `SPECCY_MCP_EXEC_BASE` (default `https://exec.speccy.cloud`) — sandbox exec endpoint
-
-## MCP Configuration
-
-Add to your client's MCP config (Claude Desktop, Cursor, Continue, Cline, etc.):
-
-### claude_desktop_config.json
-
-```json
-{
-  "mcpServers": {
-    "speccy-x402": {
-      "command": "speccy-x402-mcp",
-      "env": {
-        "SPECCY_MCP_WALLET_KEY": "0x_your_operator_wallet_private_key_here"
-      }
-    }
-  }
-}
-```
-
-### Cursor (~/.cursor/mcp.json)
-
-```json
-{
-  "mcpServers": {
-    "speccy-x402": {
-      "command": "speccy-x402-mcp",
-      "env": {
-        "SPECCY_MCP_WALLET_KEY": "0x_your_operator_wallet_private_key_here"
-      }
-    }
-  }
-}
-```
-
-### Continue (.continue/config.json)
-
-```json
-{
-  "experimental": {
-    "modelContextProtocolServers": [
-      {
-        "name": "speccy-x402",
-        "command": "speccy-x402-mcp",
-        "env": {
-          "SPECCY_MCP_WALLET_KEY": "0x_your_operator_wallet_private_key_here"
-        }
-      }
-    ]
-  }
-}
-```
 
 ## Wire into an MCP-compatible agent
 
