@@ -1,4 +1,4 @@
-# @speccy/x402-mcp
+# @speccy-agent/x402-mcp
 
 MCP server wrapping **Speccy's paid x402 endpoints**. Give any MCP-compatible AI agent two superpower tools — prediction-market data and a sandboxed Python executor — and the server pays per call in USDC on Base on your behalf.
 
@@ -16,7 +16,7 @@ No x402 knowledge required by the agent. No wallet setup on the agent side. Just
 ## Install
 
 ```bash
-npm install -g @speccy/x402-mcp
+npm install -g @speccy-agent/x402-mcp
 ```
 
 ## Configure
