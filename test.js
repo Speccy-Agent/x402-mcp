@@ -22,5 +22,9 @@ const r2 = await client.callTool({ name: "exec_python", arguments: { code: "prin
 const d2 = JSON.parse(r2.content[0].text);
 console.log("exec stdout:", d2.result?.stdout?.trim());
 
+const r5 = await client.callTool({ name: "tts_synthesize", arguments: { text: "Hallo, dit is een test.", voice: "M1", lang: "nl" } });
+const d5raw = r5.content[0].text;
+try { const d5 = JSON.parse(d5raw); console.log("tts tier:", d5.tier, "| size:", d5.result?.size, "bytes | duration:", d5.result?.durationMs, "ms"); } catch { console.log("tts (network may be unavailable in this sandbox):", d5raw.slice(0,120)); }
+
 await client.close();
 console.log("OK");

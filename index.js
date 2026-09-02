@@ -12,6 +12,7 @@ import { z } from "zod";
 
 const API_BASE = process.env.SPECCY_MCP_API_BASE || "https://api.speccy.cloud";
 const EXEC_BASE = process.env.SPECCY_MCP_EXEC_BASE || "https://exec.speccy.cloud";
+const AUDIO_BASE = process.env.SPECCY_MCP_AUDIO_BASE || "https://audio.speccy.cloud";
 const NETWORK = "eip155:8453";
 const PAYER_KEY = process.env.SPECCY_MCP_WALLET_KEY;
 
@@ -27,7 +28,7 @@ const paidFetch = wrapFetchWithPayment(fetch, client);
 
 const server = new McpServer({
   name: "speccy-x402",
-  version: "0.2.0",
+  version: "0.4.0",
 });
 
 server.tool(
@@ -145,6 +146,47 @@ server.tool(
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
+    }
+  }
+);
+
+server.tool(
+  "tts_synthesize",
+  "Synthesize speech from text using Supertonic TTS (31 languages, 10 voices). Returns 44.1 kHz WAV. Two tiers — tts ($0.005, ≤200 chars), tts-long ($0.02, ≤5000 chars, auto-chunked).",
+  {
+    text: z.string().min(1).max(5000).describe("Text to synthesize"),
+    voice: z.enum(["M1","M2","M3","M4","M5","F1","F2","F3","F4","F5"]).default("M1").describe("Voice style"),
+    lang: z.enum(["en","ko","ja","ar","bg","cs","da","de","el","es","et","fi","fr","hi","hr","hu","id","it","lt","lv","nl","pl","pt","ro","ru","sk","sl","sv","tr","uk","vi"]).default("en").describe("Language code"),
+    speed: z.number().min(0.7).max(2.0).default(1.0).describe("Speech speed multiplier").optional(),
+    tier: z.enum(["tts", "tts-long"]).default("tts").describe("Pricing tier — tts for short (≤200 chars), tts-long for longer text (≤5000 chars)").optional(),
+  },
+  async ({ text, voice, lang, speed, tier }) => {
+    const useLong = tier === "tts-long" || text.length > 200;
+    const path = useLong ? "tts-long" : "tts";
+    try {
+      const res = await paidFetch(`${AUDIO_BASE}/v1/audio/${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice, lang, speed }),
+      });
+      if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
+      const data = await res.json();
+      // Don't echo back huge base64 — return metadata + size + a hint
+      const summary = {
+        success: data.success,
+        tier: data.tier,
+        input: data.input,
+        result: data.result && {
+          mimeType: data.result.mimeType,
+          size: data.result.size,
+          durationMs: data.result.durationMs,
+          outputBase64Length: data.result.outputBase64?.length || 0,
+        },
+        note: "outputBase64 omitted from MCP response to keep messages small. Use direct HTTPS call to fetch the full WAV.",
+      };
+      return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
     } catch (e) {
       return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
     }

@@ -1,6 +1,6 @@
 # @speccy-agent/x402-mcp
 
-MCP server wrapping **Speccy's paid x402 endpoints**. Give any MCP-compatible AI agent two superpower tools — prediction-market data and a sandboxed Python executor — and the server pays per call in USDC on Base on your behalf.
+MCP server wrapping **Speccy's paid x402 endpoints**. Give any MCP-compatible AI agent five superpower tools — prediction-market data, a sandboxed Python executor, FFmpeg media transforms, real-time web search, and multilingual text-to-speech — and the server pays per call in USDC on Base on your behalf.
 
 No x402 knowledge required by the agent. No wallet setup on the agent side. Just install the server, point your agent at it, done.
 
@@ -12,6 +12,7 @@ No x402 knowledge required by the agent. No wallet setup on the agent side. Just
 | `exec_python` | Run Python 3.12 code in an isolated Docker sandbox (no network, read-only FS, 30s timeout, 64KB output) | $0.02 USDC |
 | `transform_media` | Run FFmpeg on a video/audio file (3 tiers: copy $0.005, transform $0.05, heavy $0.20) | $0.005–$0.20 USDC |
 | `web_search` | Real-time web search + extract via Tavily (3 modes: search $0.005, extract $0.02, smart search+extract $0.05) | $0.005–$0.05 USDC |
+| `tts_synthesize` | Multilingual text-to-speech via Supertonic 3 (31 languages, 10 voices, 44.1 kHz WAV). `tts` tier (≤200 chars) and `tts-long` tier (≤5000 chars, auto-chunked) | $0.005–$0.02 USDC |
 
 ## Install
 
@@ -30,6 +31,7 @@ export SPECCY_MCP_WALLET_KEY="0x..."   # operator wallet private key
 Optional overrides:
 - `SPECCY_MCP_API_BASE` (default `https://api.speccy.cloud`) — Polymarket endpoint
 - `SPECCY_MCP_EXEC_BASE` (default `https://exec.speccy.cloud`) — sandbox exec endpoint
+- `SPECCY_MCP_AUDIO_BASE` (default `https://audio.speccy.cloud`) — Supertonic TTS endpoint
 
 ## Wire into an MCP-compatible agent
 

@@ -1,7 +1,7 @@
 {
   "name": "@speccy-agent/x402-mcp",
-  "version": "0.2.3",
-  "description": "MCP server wrapping Speccy's paid x402 endpoints (Polymarket + Python sandbox + FFMPEG + Web search). Pay per call in USDC on Base.",
+  "version": "0.4.0",
+  "description": "MCP server wrapping Speccy's paid x402 endpoints (Polymarket + Python sandbox + FFMPEG + Web search + Supertonic TTS). Pay per call in USDC on Base.",
   "type": "module",
   "bin": {
     "speccy-x402-mcp": "index.js"
@@ -31,7 +31,12 @@
     "code-execution",
     "ai-agents",
     "usdc",
-    "base"
+    "base",
+    "tts",
+    "speech",
+    "voice",
+    "supertonic",
+    "audio"
   ],
   "license": "MIT",
   "author": "Philip (Esla) \u2014 Speccy"
