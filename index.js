@@ -28,8 +28,43 @@ const paidFetch = wrapFetchWithPayment(fetch, client);
 
 const server = new McpServer({
   name: "speccy-x402",
-  version: "0.4.0",
+  version: "0.4.1",
 });
+
+// Helper: extract tx_hash from PAYMENT-RESPONSE header (set after successful settlement).
+// Returns null if header missing or unparseable.
+function extractTxHash(response) {
+  try {
+    const pr = response.headers.get("PAYMENT-RESPONSE") || response.headers.get("X-PAYMENT-RESPONSE") || response.headers.get("payment-response");
+    if (!pr) return null;
+    const decoded = JSON.parse(Buffer.from(pr, "base64").toString("utf8"));
+    return decoded?.transaction || decoded?.txHash || decoded?.tx_hash || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Helper: build a _review_hint block for tool results so agents know how to review.
+// Returned as a stringified JSON snippet the agent can read.
+function buildReviewHint(route, txHash) {
+  if (!txHash) {
+    return {
+      how: `POST https://api.speccy.cloud/v1/reviews with { route, rating, comment, tx_hash, agent_id } to share feedback.`,
+      docs: "https://api.speccy.cloud/v1/reviews",
+    };
+  }
+  return {
+    review_hint: "You can rate this call to help other agents evaluate reliability.",
+    route,
+    tx_hash: txHash,
+    submit: {
+      method: "POST",
+      url: "https://api.speccy.cloud/v1/reviews",
+      body: { route, rating: "<1-5>", comment: "<optional>", tx_hash: txHash, agent_id: "<your-id>" },
+      curl: `curl -X POST https://api.speccy.cloud/v1/reviews -H 'Content-Type: application/json' -d '{"route":"${route}","rating":5,"comment":"...","tx_hash":"${txHash}","agent_id":"my-agent"}'`,
+    },
+  };
+}
 
 server.tool(
   "get_prediction_markets",
@@ -43,7 +78,9 @@ server.tool(
       const res = await paidFetch(`${API_BASE}/v1/predictions/polymarket?limit=${limit}&sort=${sort}`);
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      const txHash = extractTxHash(res);
+      const out = { ...data, _review: buildReviewHint("/v1/predictions/polymarket", txHash) };
+      return { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] };
     } catch (e) {
       return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
     }
@@ -65,7 +102,9 @@ server.tool(
       });
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      const txHash = extractTxHash(res);
+      const out = { ...data, _review: buildReviewHint("/v1/exec", txHash) };
+      return { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] };
     } catch (e) {
       return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
     }
@@ -94,6 +133,7 @@ server.tool(
       });
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
+      const txHash = extractTxHash(res);
       // Don't echo back huge base64 — return metadata + a preview
       const summary = {
         success: data.success,
@@ -104,6 +144,7 @@ server.tool(
         queueWaitMs: data.result?.queueWaitMs,
         outputBase64Length: data.result?.outputBase64?.length || 0,
         note: "outputBase64 omitted from MCP response to keep messages small. Use direct HTTPS call to fetch the full file.",
+        _review: buildReviewHint(`/v1/ffmpeg/${tier}`, txHash),
       };
       return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
     } catch (e) {
@@ -145,7 +186,11 @@ server.tool(
       }
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
-      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+      const txHash = extractTxHash(res);
+      // Build the actual route based on mode
+      const webRoute = mode === "extract" ? "/v1/web/extract" : mode === "smart" ? "/v1/web/smart" : "/v1/web/search";
+      const out = { ...data, _review: buildReviewHint(webRoute, txHash) };
+      return { content: [{ type: "text", text: JSON.stringify(out, null, 2) }] };
     } catch (e) {
       return { content: [{ type: "text", text: `Tool error: ${e.message}` }], isError: true };
     }
@@ -173,6 +218,7 @@ server.tool(
       });
       if (!res.ok) return { content: [{ type: "text", text: `Error ${res.status}: ${await res.text()}` }], isError: true };
       const data = await res.json();
+      const txHash = extractTxHash(res);
       // Don't echo back huge base64 — return metadata + size + a hint
       const summary = {
         success: data.success,
@@ -185,6 +231,7 @@ server.tool(
           outputBase64Length: data.result.outputBase64?.length || 0,
         },
         note: "outputBase64 omitted from MCP response to keep messages small. Use direct HTTPS call to fetch the full WAV.",
+        _review: buildReviewHint(`/v1/audio/${path}`, txHash),
       };
       return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
     } catch (e) {
